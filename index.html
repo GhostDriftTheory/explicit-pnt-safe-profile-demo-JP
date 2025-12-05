@@ -379,6 +379,38 @@
             }
         }
 
+        /* Navigation Footer */
+        .nav-footer {
+            text-align: center;
+            margin-top: 5rem; /* QEDとの間隔 */
+            padding-top: 2rem;
+            border-top: 1px solid #eee; /* 区切り線 */
+            margin-bottom: 2rem;
+        }
+        .btn-home {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: #666; /* 落ち着いたグレー */
+            font-family: var(--font-sans);
+            font-weight: 500;
+            padding: 0.8rem 2rem;
+            border: 1px solid #ddd;
+            border-radius: 50px; /* エレガントな丸み */
+            transition: all 0.2s ease;
+            background-color: #fff;
+            font-size: 0.95rem;
+        }
+        .btn-home:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+            background-color: #f8f9fa;
+            transform: translateY(-2px); /* ふわりと浮く演出 */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
     </style>
 </head>
 <body>
@@ -806,6 +838,13 @@ if __name__ == "__main__":
     </details>
 
     <div class="qed"></div>
+
+    <!-- Navigation Footer -->
+    <div class="nav-footer">
+        <a href="https://ghostdrifttheory.github.io/ghostdrifttheory.github.io-JP/" class="btn-home">
+            <span>←</span> GhostDrift Home へ戻る
+        </a>
+    </div>
 
     <!-- Script to enable interactivity (Port of Python Logic) -->
     <script>
