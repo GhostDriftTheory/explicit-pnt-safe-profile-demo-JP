@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>素数計算OSのための数理基盤</title>
+    
+    <!-- Fonts: Noto Serif JP (本文), Noto Sans JP (見出し), Fira Code (コード) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- MathJax Configuration -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                macros: {
+                    Re: "\\operatorname{Re}",
+                    Im: "\\operatorname{Im}",
+                    Res: "\\operatorname{Res}",
+                    Li: "\\operatorname{Li}",
+                    li: "\\operatorname{li}",
+                    C: "\\mathbb{C}",
+                    R: "\\mathbb{R}",
+                    Z: "\\mathbb{Z}",
+                    N: "\\mathbb{N}"
+                },
+                tags: 'ams'
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        :root {
+            /* Design Tokens */
+            --font-serif: "Noto Serif JP", "Times New Roman", "Hiragino Mincho ProN", serif;
+            --font-sans: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-code: "Fira Code", "Consolas", monospace;
+            
+            --color-bg: #ffffff;
+            --color-text: #2c2c2c;
+            --color-accent: #004085; /* Academic Blue */
+            --color-border: #e0e0e0;
+            --color-bg-light: #f8f9fa;
+            --color-theorem-bg: #fdfdfe;
+            --color-theorem-border: #004085;
+            
+            --spacing-section: 3.5rem;
+        }
+
+        body {
+            font-family: var(--font-serif);
+            line-height: 1.9; /* 読みやすさのため少し広めに */
+            color: var(--color-text);
+            max-width: 800px; /* 論文として読みやすい幅 */
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+            background-color: var(--color-bg);
+            text-align: justify;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Typography - 和文書籍の慣習に従い、見出しはゴシック、本文は明朝 */
+        h1, h2, h3, h4 {
+            font-family: var(--font-sans);
+            color: #111;
+            line-height: 1.4;
+        }
+
+        h1 {
+            font-weight: 700;
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.05em;
+        }
+
+        h1 small {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-top: 1rem;
+            color: #555;
+            font-feature-settings: "palt";
+        }
+
+        h2 {
+            font-weight: 700;
+            margin-top: var(--spacing-section);
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #333; /* アカデミックな硬さを出す */
+            padding-bottom: 0.5rem;
+            font-size: 1.5rem;
+        }
+
+        .author {
+            text-align: center;
+            margin-top: 1rem;
+            margin-bottom: 4rem;
+            font-size: 1rem;
+            color: #444;
+            font-family: var(--font-sans);
+            font-weight: 500;
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+            text-indent: 1em;
+        }
+
+        /* Theorem Environments - 学術書風のデザイン */
+        .theorem, .lemma, .definition, .corollary, .remark {
+            margin: 2.5rem 0;
+            padding: 1rem 1.5rem;
+            background-color: var(--color-theorem-bg);
+            border-left: 4px solid var(--color-theorem-border);
+            border-radius: 0 4px 4px 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+
+        /* 種類ごとの色分け（控えめに） */
+        .definition { border-left-color: #28a745; --color-theorem-bg: #f9fff9; }
+        .remark { border-left-color: #6c757d; --color-theorem-bg: #f8f9fa; }
+        .theorem, .lemma, .corollary { border-left-color: var(--color-accent); }
+
+        .theorem-title {
+            font-weight: 700;
+            font-family: var(--font-sans);
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #222;
+        }
+
+        .theorem-content {
+            font-style: normal;
+        }
+
+        /* MathJax Adjustments */
+        .mjx-chtml {
+            font-size: 110% !important; /* 少し大きめにして視認性確保 */
+        }
+        
+        mjx-container[display="true"] {
+            overflow-x: auto;
+            overflow-y: hidden;
+            max-width: 100%;
+            padding: 0.8rem 0;
+            margin: 0.5rem 0;
+            /* スクロールバーのスタイル（モダンブラウザ用） */
+            scrollbar-width: thin;
+            scrollbar-color: #ccc transparent;
+        }
+        
+        mjx-container[display="true"]::-webkit-scrollbar {
+            height: 6px;
+        }
+        mjx-container[display="true"]::-webkit-scrollbar-thumb {
+            background-color: #ccc;
+            border-radius: 3px;
+        }
+
+        /* Interactive Elements */
+        details {
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            padding: 0;
+            background-color: #fff;
+            margin: 2.5rem 0;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        summary {
+            font-weight: 700;
+            margin: 0;
+            padding: 1rem 1.2rem;
+            cursor: pointer;
+            list-style: none;
+            background-color: var(--color-bg-light);
+            color: var(--color-accent);
+            border-bottom: 1px solid transparent;
+            font-family: var(--font-sans);
+            display: flex;
+            align-items: center;
+            font-size: 0.95rem;
+            transition: background-color 0.2s;
+        }
+        
+        summary:hover {
+            background-color: #eaecef;
+        }
+
+        summary::after {
+            content: "+"; 
+            margin-left: auto;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        details[open] summary {
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        details[open] summary::after {
+            content: "-";
+        }
+
+        pre {
+            background: #2d2d2d; /* ダークモード風のエディタ感 */
+            color: #f8f8f2;
+            padding: 1.5rem;
+            border: none;
+            overflow-x: auto;
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        code {
+            font-family: var(--font-code);
+        }
+        
+        /* インラインコード */
+        p code {
+            color: #c7254e;
+            background-color: #f9f2f4;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+        }
+        
+        /* プリコード内のスタイル上書き */
+        pre code {
+            color: inherit;
+            background-color: transparent;
+            padding: 0;
+        }
+
+        ol, ul {
+            margin-left: 1.5em;
+            margin-bottom: 1.5rem;
+            padding-left: 1em;
+        }
+
+        .qed {
+            text-align: right;
+            margin-top: -1em;
+            margin-bottom: 3rem;
+            font-family: var(--font-sans);
+        }
+        .qed::after {
+            content: "∎"; /* 学術的なQED記号 */
+            color: #333;
+            font-size: 1.2em;
+        }
+
+        /* Demo App Section */
+        .app-container {
+            margin-top: 4rem;
+            padding: 2rem;
+            background: #fff;
+            border: 1px solid var(--color-accent);
+            border-top: 4px solid var(--color-accent);
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .app-title {
+            font-family: var(--font-sans);
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--color-accent);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+        input[type="number"] {
+            padding: 0.8rem;
+            font-family: var(--font-code);
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+            flex: 1;
+            min-width: 200px;
+            transition: border-color 0.2s;
+        }
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px rgba(0,64,133,0.1);
+        }
+        button {
+            background-color: var(--color-accent);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            font-family: var(--font-sans);
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background-color: #003065;
+        }
+        button:active {
+            transform: translateY(1px);
+        }
+        .result-box {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 4px;
+            font-family: var(--font-code);
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            border-left: 4px solid #6c757d;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 600px) {
+            body {
+                padding: 1.5rem 1rem;
+                font-size: 0.95rem; /* スマホで文字が大きすぎないように */
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+            h1 small {
+                font-size: 0.9rem;
+                margin-top: 0.5rem;
+            }
+            h2 {
+                font-size: 1.25rem;
+                margin-top: 2.5rem;
+            }
+            .theorem, .lemma, .definition, .corollary, .remark {
+                margin: 1.5rem 0;
+                padding: 1rem;
+            }
+            .mjx-chtml {
+                font-size: 100% !important;
+            }
+            .app-container {
+                padding: 1.2rem;
+                margin-top: 3rem;
+            }
+            
+            /* スマホでフォームを縦積みに */
+            .input-group {
+                flex-direction: column;
+                gap: 0.8rem;
+            }
+            input[type="number"] {
+                width: 100%;
+                box-sizing: border-box; /* paddingを含めた幅計算 */
+            }
+            button {
+                width: 100%;
+                padding: 0.9rem; /* タップしやすく */
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>素数計算OSのための数理基盤<br><small>解析的明示公式と証明可能計算の実装</small></h1>
+    <div class="author">GhostDrift Mathematical Institute</div>
+
+    <p>
+        本稿では、Riemann ゼータ関数 $\zeta(s)$ の解析的性質に基づき、素数計数関数 $\pi(x)$ の明示的な評価式を導出する過程を概観する。
+        さらに、導出された「誤差項付き素数定理 (Prime Number Theorem with Error Term)」を基礎とし、証明可能計算 (Provable Computation) を指向したアルゴリズムの実装モデルを示す。
+    </p>
+
+    <h2>1. 定義および基本等式</h2>
+
+    <p>
+        まず、本稿で用いる基本的な関数群を定義する。
+    </p>
+
+    <div class="definition">
+        <span class="theorem-title">定義 1.1 (Riemann ゼータ関数).</span>
+        <div class="theorem-content">
+        複素変数 $s = \sigma + it$ ($\sigma > 1$) に対して、以下のように定義する。
+        $$ \zeta(s) := \sum_{n=1}^\infty \frac{1}{n^s} = \prod_{p} \left(1 - \frac{1}{p^s}\right)^{-1}. $$
+        </div>
+    </div>
+
+    <div class="definition">
+        <span class="theorem-title">定義 1.2 (Von Mangoldt 関数).</span>
+        <div class="theorem-content">
+        $$
+        \Lambda(n) := \begin{cases}
+            \log p & n = p^k \text{ ($p$: 素数, $k \ge 1$) のとき}, \\
+            0 & \text{それ以外のとき}.
+        \end{cases}
+        $$
+        この関数を用いると、$\zeta(s)$ の対数微分は以下のように表される。
+        $$ -\frac{\zeta'}{\zeta}(s) = \sum_{n=1}^\infty \frac{\Lambda(n)}{n^s}, \quad \sigma > 1. $$
+        </div>
+    </div>
+
+    <div class="definition">
+        <span class="theorem-title">定義 1.3 (Chebyshev 関数).</span>
+        <div class="theorem-content">
+        $$ \psi(x) := \sum_{n \le x} \Lambda(n). $$
+        </div>
+    </div>
+
+    <h2>2. Perron の公式と複素積分</h2>
+
+    <p>
+        Dirichlet 級数の係数和を抽出するために、Perron の公式を用いる。積分路を適切に選ぶことで、$\psi(x)$ を複素積分として表現できる。
+    </p>
+
+    <div class="lemma">
+        <span class="theorem-title">補題 2.1 (打ち切り型 Perron 公式).</span>
+        <div class="theorem-content">
+        $x \ge 2, T \ge 2$ とし、$c = 1 + \frac{1}{\log x}$ とおく。このとき、
+        $$ \psi(x) = \frac{1}{2\pi i} \int_{c-iT}^{c+iT} \left( -\frac{\zeta'}{\zeta}(s) \right) \frac{x^s}{s} \, ds + R(x, T), $$
+        が成り立つ。ここで剰余項 $R(x, T)$ は次のように評価される。
+        $$ R(x, T) \ll \frac{x \log^2 x}{T}. $$
+        </div>
+    </div>
+
+    <p>
+        積分路を左方（臨界領域 $0 < \sigma < 1$）へ移動させ、Cauchy の留数定理を適用することで、被積分関数の極における留数の寄与を抽出する。
+    </p>
+
+    <h2>3. 明示公式 (Explicit Formula)</h2>
+
+    <p>
+        $\zeta(s)$ は全平面 $\mathbb{C}$ に有理型に解析接続され、$s=1$ に単純極を持つ。非自明零点を $\rho = \beta + i\gamma$ とし、自明な零点を $s = -2k$ ($k \in \mathbb{N}$) とする。
+    </p>
+
+    <div class="theorem">
+        <span class="theorem-title">定理 3.1 ($\psi(x)$ の明示公式).</span>
+        <div class="theorem-content">
+        $x \ge 2$ および $T \ge 2$ に対して、次式が成り立つ。
+        $$ \psi(x) = x - \sum_{|\gamma| \le T} \frac{x^\rho}{\rho} - \frac{\zeta'}{\zeta}(0) - \frac{1}{2}\log(1-x^{-2}) + R_{explicit}(x, T), $$
+        ここで誤差項は以下を満たす。
+        $$ R_{explicit}(x, T) \ll \frac{x \log^2(xT)}{T} + \log x. $$
+        </div>
+    </div>
+
+    <h2>4. 零点自由領域と誤差評価</h2>
+
+    <p>
+        定理 3.1 における零点和を評価するため、解析数論における標準的な外部知見を用いる。
+        具体的には、古典的な零点自由領域 (Zero-Free Region) および Riemann–von Mangoldt の零点個数公式の
+        「有効版 (effective version)」を想定する。
+        すなわち、そこでは具体的な定数 $c_0, A, B,\dots$ を伴う形で
+        $$ \sigma \ge 1 - \frac{c_0}{\log(|t|+2)}, \qquad
+           N(T) = \frac{T}{2\pi}\log\frac{T}{2\pi} - \frac{T}{2\pi} + O(\log T) $$
+        といった評価が与えられていると仮定する。
+        本デモにおいて、これらは新たな貢献ではなく、外部モジュールから供給される
+        「解析的定数付き外部定理 (External Explicit Theorem)」として扱う。
+        後述の Safe モードでは、この種の定数がすべて $(K_\psi, K_\pi, c, x_0)$ に吸収される。
+    </p>
+
+    <div class="lemma">
+        <span class="theorem-title">古典的知見 4.1 (零点自由領域; 外部定理).</span>
+        <div class="theorem-content">
+        ある明示的な定数 $c_0 > 0$ が存在し、領域
+        $$ \sigma \ge 1 - \frac{c_0}{\log(|t| + 2)} \qquad (|t| \ge 2) $$
+        において $\zeta(\sigma + it) \neq 0$ が成り立つ。
+        <br>
+        歴史的には de la Vallée Poussin に遡るこの領域は、現代においては Kadiri や Mossinghoff らによる研究で、$c_0$ の具体的な数値計算値が与えられている。
+        </div>
+    </div>
+
+    <div class="lemma">
+        <span class="theorem-title">古典的知見 4.2 (零点個数公式; 外部定理).</span>
+        <div class="theorem-content">
+        $N(T)$ を $0 < \gamma \le T$ なる $\zeta(s)$ の零点 $\rho = \beta + i\gamma$ の個数とする。古典的な Riemann–von Mangoldt 公式によれば、
+        $$ N(T) = \frac{T}{2\pi} \log \frac{T}{2\pi} - \frac{T}{2\pi} + O(\log T). $$
+        文献（Titchmarsh, Davenport 等）には、暗黙の定数を含む形での有効な (effective) 評価式が標準的に記載されている。
+        本デモではこの公式の「形式 (shape)」のみを用い、暗黙の定数は外部からの解析的入力の一部として扱う。
+        </div>
+    </div>
+
+    <p>
+        古典的な議論（例えば Titchmarsh や Davenport の教科書に見られるもの）により、
+        零点自由領域 4.1 と零点個数公式 4.2 から、次のような誤差項付き素数定理が得られることが知られている。
+    </p>
+
+    <div class="theorem">
+        <span class="theorem-title">定理 4.3 (誤差項付き素数定理).</span>
+        <div class="theorem-content">
+        ある明示的な定数 $c > 0$ および $x_0 \ge 2$ が存在し、
+        すべての $x \ge x_0$ に対して
+        $$ \psi(x) = x + O\left( x \exp(-c\sqrt{\log x}) \right) $$
+        が成り立つ。
+        <br>
+        実際には、古典的な零点自由領域および零点個数公式の有効版
+        （例えば Titchmarsh や Davenport の教科書に記載されているもの）を組み合わせることで、
+        具体的な $c$ と $x_0$ を与えることができる。
+        本デモでは、それらの数値の導出過程をブラックボックス化し、
+        後続のアルゴリズム層では $(K_\psi, K_\pi, c, x_0)$ という「解析的プロファイル」として受け取る。
+        </div>
+    </div>
+
+    <h2>5. $\psi(x)$ から $\pi(x)$ への帰着</h2>
+
+    <p>
+        $\theta(x) = \sum_{p \le x} \log p$ と定義する。関係式 $\psi(x) = \theta(x) + \theta(x^{1/2}) + \dots$ より、
+        $$ \psi(x) - \theta(x) \ll \sqrt{x} $$
+        である。したがって、$\theta(x)$ の漸近挙動は誤差項の範囲内で $\psi(x)$ と一致する。
+        Stieltjes 積分による部分積分公式を用いれば、
+        $$ \pi(x) = \int_{2}^{x} \frac{d\theta(t)}{\log t}
+           = \int_{2}^{x} \frac{dt}{\log t}
+           + O\left( x \exp(-c\sqrt{\log x}) \right) $$
+        を得る。ここで、素数定理の文脈では
+        $$ \Li(x) := \int_{2}^{x} \frac{dt}{\log t} $$
+        と定義する。
+    </p>
+
+    <p>
+        なお解析数論の文献では、主値積分
+        $$ \operatorname{li}(x) := \mathrm{pv}\!\!\int_0^x \frac{dt}{\log t} $$
+        を用いる記法も一般的だが、本稿では一貫して
+        $$ \Li(x) = \int_2^x \frac{dt}{\log t} $$
+        の意味で $\Li$ を用いる。
+    </p>
+    
+    <div class="corollary">
+        <span class="theorem-title">系 5.1.</span>
+        <div class="theorem-content">
+        $$ \pi(x) = \Li(x) + O\left( x \exp(-c\sqrt{\log x}) \right). $$
+        </div>
+    </div>
+
+    <h2>6. アルゴリズム実装 (Python / Live Demo)</h2>
+
+    <p>
+        以上の解析的評価に基づき、素数計算OSの核となるロジックを示す。
+        本実装では、解析数論的な「理論的定数（Explicit Constants）」と、計算機による「数値的評価」を厳密に分離する設計を採用している。
+    </p>
+
+    <div class="remark">
+        <span class="theorem-title">注意 (Safe vs Pragmatic Modes).</span>
+        <div class="theorem-content">
+        <p>
+            本デモコードでは、以下の2つの利用モードを明確に区別する：
+        </p>
+        <ul>
+            <li>
+                <strong>安全／証明モード (Safe / Certificate Mode):</strong>
+                全ての解析的定数 ($K_\psi, K_\pi, c, x_0$) は、具体的な明示的定理を引用する形で固定され、台帳 (ledger) に記録される。
+                $\Li(x)$ の計算には、区間演算ルーチン <code>li_bounds_interval</code> が用いられる。
+                計算機検証可能な証明書 (machine-checkable certificate) をサポートするのは本モードのみである。<br>
+                本デモにおいて、事前に組み込まれた「Safe プロファイル」 <code>PI_SAFE_PROFILE_PT2020</code> は、
+                Dusart (2010, Thm 1.12) を改良した Platt–Trudgian (2021, Cor. 2) の結果に基づくものであり、
+                条件 $\log x \ge 2000$ の下で
+                $$ |\pi(x) - \Li(x)| \le 235\,x (\log x)^{0.52} \exp(-0.8\sqrt{\log x}) $$
+                を保証する。
+                実運用を想定すると、このプロファイルは「Explicit-PNT / ADIC 層から供給される
+                外部解析プロファイル」の一例に過ぎず、OS 側では
+                その数値と前提条件を台帳経由で参照するだけ、という役割分担になる。
+            </li>
+            <li>
+                <strong>実用モード (Pragmatic Mode):</strong>
+                対話的な探索のために、<code>li_numeric</code> のような浮動小数点演算ルーチンの使用を許可する。
+                数式上の形式は同一であるが、そこから得られる保証はあくまでヒューリスティックなものであり、形式的な証明を意図したものではない。
+            </li>
+        </ul>
+        </div>
+    </div>
+
+    <!-- Live Execution App Section -->
+    <div class="app-container">
+        <div class="app-title">⚡ Interactive OS Kernel (Pragmatic Mode)</div>
+        <p style="font-size: 0.95rem; color: #555; margin-bottom: 1.5rem;">
+            以下のフォームで、Pythonコードのロジックをブラウザ上で実行し、$\pi(x)$ の推定値と誤差項の評価を行います。
+        </p>
+        <div class="input-group">
+            <input type="number" id="calcInput" value="1000000" min="2" placeholder="x の値を入力 (例: 1000000)">
+            <button onclick="runKernelCalculation()">計算実行</button>
+        </div>
+        <div id="calcResult" class="result-box">ここに計算結果が表示されます...</div>
+    </div>
+
+    <details>
+        <summary>Reference Implementation (Python) : クリックして展開</summary>
+<pre><code class="language-python">import math
+from typing import Tuple
+
+# ==========================================
+# Explicit PNT constants: sample "Safe profile"
+#   Based on Platt–Trudgian, *The error term in the prime number theorem*
+#   (Math. Comp. 90 (2021)), Corollary 2, which improves Dusart (2010, Thm 1.12).
+#   Cor. 2 states:
+#       |π(x) - Li(x)| ≤ 235 * x * (log x)**0.52 * exp(-0.8 * sqrt(log x))
+#   for log x ≥ 2000.
+#   We treat this as an external analytic input.
+# ==========================================
+PI_SAFE_PROFILE_PT2020 = {
+    "name": "Platt–Trudgian 2021, Cor. 2 (improves Dusart 2010, Thm 1.12)",
+    "K_pi": 235.0,
+    "c": 0.8,
+    # The theorem assumes log x ≥ 2000 (natural logarithm).
+    # We store that threshold as `log_x0` rather than `x0 = exp(2000)`,
+    # since exp(2000) is astronomically large and cannot be represented as a float.
+    "log_x0": 2000.0,
+}
+
+# ==============================================================================
+# 素数定理に基づく推定のための数理コア
+# ==============================================================================
+
+# ========================================
+# 1. Li(x) 評価レイヤ
+# ========================================
+
+def li_bounds_interval(x: float) -> Tuple[float, float]:
+    """
+    Li(x) の厳密な区間評価のためのスケルトン。
+    証明可能計算 (ADIC) コンテキストでの想定インターフェイスは次の通り。
+
+      - 入力: 実数 x ≥ 2 （OS 側からは float で渡される）
+      - 出力: (Li_low, Li_high) のタプル。
+        実際の ADIC 実装では、有理数対 (q_low, q_high) を outward rounding したものを
+        台帳に保持し、この関数はその値を浮動小数点に写像して返すことを想定する。
+      - 性質: つねに Li_low ≤ Li(x) ≤ Li_high を満たす。
+        この性質の証明責任は Explicit-PNT / ADIC レイヤにあり、
+        本ファイルの OS ロジックはその前提の下でのみ Safe モードを名乗る。
+
+    デモ実装では、解析レイヤがまだ接続されていないことを明示するために、
+    呼び出されると例外を送出する。
+    """
+    raise NotImplementedError(
+        "Li(x) の厳密な区間評価は未接続です: "
+        "Explicit-PNT / ADIC レイヤからの提供が必要です。"
+    )
+
+def li_numeric(x: float, n_steps: int = 10000) -> float:
+    """
+    対数積分 Li(x) = ∫_2^x dt / log t の数値近似（Simpson則を使用）。
+
+    モードの意味論:
+      - 実用モード (Pragmatic Mode):
+          対話的な探索用。戻り値 Li(x) に厳密な誤差保証はない。
+      - 安全／証明モード (Safe / Certificate Mode):
+          使用禁止。`li_bounds_interval(x)` に置換されなければならない。
+    """
+    if x <= 2.0:
+        return 0.0
+
+    a, b = 2.0, float(x)
+    h = (b - a) / n_steps
+    s = 0.0
+
+    for k in range(n_steps + 1):
+        t = a + k * h
+        weight = 1 if (k == 0 or k == n_steps) else (4 if k % 2 == 1 else 2)
+        s += weight / math.log(t)
+
+    return 0.5 * h * s
+
+
+# ========================================
+# 2. 新素数定理型 誤差カーネル
+# ========================================
+
+def new_pnt_error_kernel(x: float, c: float) -> float:
+    """
+    一般的な誤差カーネル: E(x,c) = x * exp(-c * sqrt(log x))
+    定理 4.3 参照。
+    """
+    if x <= 1.0:
+        return 0.0
+    L = math.log(x)
+    return x * math.exp(-c * math.sqrt(L))
+
+def new_pnt_error_kernel_pt2020(x: float, c: float) -> float:
+    """
+    Platt–Trudgian (2021), Corollary 2 に対応する誤差カーネル:
+
+        |π(x) - Li(x)|
+          ≤ 235 * x * (log x)**0.52 * exp(-0.8 * sqrt(log x))
+          for log x ≥ 2000.
+
+    これは一般的なカーネル `new_pnt_error_kernel` に、追加の因子 (log x)**0.52 を乗じたもの。
+    """
+    if x <= 0.0:
+        raise ValueError("x must be positive in new_pnt_error_kernel_pt2020")
+
+    log_x = math.log(x)
+    if log_x < PI_SAFE_PROFILE_PT2020["log_x0"]:
+        # Safeモードでは定理の適用範囲外なら例外を送出
+        raise ValueError(
+            f"x = {x} is outside the provable range: "
+            f"log x = {log_x:.3f} < {PI_SAFE_PROFILE_PT2020['log_x0']}"
+        )
+
+    base = new_pnt_error_kernel(x, c)
+    return (log_x ** 0.52) * base
+
+
+# ========================================
+# 3. 理論レイヤ (補題のコード化)
+# ========================================
+
+def psi_bounds_new_pnt(x: float, K_psi: float, c: float) -> Tuple[float, float]:
+    """
+    ψ(x) の明示公式評価: |ψ(x) - x| ≤ K_psi * x * exp(-c * sqrt(log x))
+    """
+    E = K_psi * new_pnt_error_kernel(x, c)
+    return x - E, x + E
+
+def theta_bounds_from_psi(psi_lower: float, psi_upper: float,
+                          x: float, C_theta: float) -> Tuple[float, float]:
+    """
+    ψ(x) から θ(x) への境界伝播。
+    """
+    shift = C_theta * math.sqrt(x)
+    return psi_lower - shift, psi_upper + shift
+
+
+# ========================================
+# 4. π(x) の境界評価と OS 推定
+# ========================================
+
+def pi_bounds_new_pnt(x: float,
+                      K_pi: float,
+                      c: float) -> Tuple[float, float]:
+    """
+    汎用的な明示的素数定理形式に基づく π(x) の境界計算。
+    (K_pi, c, x0) は外部から供給される前提。
+    """
+    li_x = li_numeric(x)
+    E_pi = K_pi * new_pnt_error_kernel(x, c)
+    return li_x - E_pi, li_x + E_pi
+
+def pi_bounds_new_pnt_safe_sample(x: float) -> Tuple[float, float]:
+    """
+    固定された「Safe プロファイル」を用いた π(x) の境界計算サンプル。
+
+        |π(x) - Li(x)|
+          ≤ 235 * x * (log x)**0.52 * exp(-0.8 * sqrt(log x))
+          for log x ≥ 2000,
+
+    出典: Platt–Trudgian, Math. Comp. 90 (2021), Corollary 2.
+
+    【重要】
+      真に厳密な証明書を得るには、`li_numeric(x)` を
+      ADIC 実装に基づく `li_bounds_interval(x)` に置き換える必要がある。
+      本ファイルはあくまで OS 側のインターフェイスとロジックのサンプルであり、
+      Safe Mode そのものを提供するものではない。
+    """
+    # 定理の適用範囲チェック: log x ≥ 2000
+    if x <= 0.0:
+        raise ValueError("x must be positive")
+
+    log_x = math.log(x)
+    if log_x < PI_SAFE_PROFILE_PT2020["log_x0"]:
+        raise ValueError(
+            f"x = {x} is outside the provable range for the fixed profile "
+            f"(log x = {log_x:.3f} < {PI_SAFE_PROFILE_PT2020['log_x0']})."
+        )
+
+    # デモ用: 浮動小数点 Li(x) を使用
+    li_x = li_numeric(x)
+
+    E_pi = PI_SAFE_PROFILE_PT2020["K_pi"] * \
+        new_pnt_error_kernel_pt2020(x, PI_SAFE_PROFILE_PT2020["c"])
+
+    return li_x - E_pi, li_x + E_pi
+
+def pi_estimate_new_pnt(x: float,
+                        K_pi: float = 1.0, 
+                        c: float = 0.2) -> int:
+    """
+    OS API 用の π(x) 点推定（丸め値）。
+    安全性重視の用途では使用せず、上記 `pi_bounds_...` 関数を使用すること。
+    """
+    li_x = li_numeric(x)
+    return int(round(li_x))
+
+# 使用例
+if __name__ == "__main__":
+    # Platt-Trudgian の適用範囲外でのデモ用ターゲット
+    target = 10**6
+    est = pi_estimate_new_pnt(target, K_pi=0.5, c=0.2)
+    print(f"pi({target}) estimate (Pragmatic Mode): {est}")
+</code></pre>
+    </details>
+
+    <div class="qed"></div>
+
+    <!-- Script to enable interactivity (Port of Python Logic) -->
+    <script>
+        // ========================================
+        // JavaScript Port of Python Logic
+        // ========================================
+
+        // 1. Li(x) numeric approximation
+        function liNumeric(x, nSteps = 10000) {
+            x = parseFloat(x);
+            if (x <= 2.0) return 0.0;
+
+            const a = 2.0;
+            const b = x;
+            const h = (b - a) / nSteps;
+            let s = 0.0;
+
+            for (let k = 0; k <= nSteps; k++) {
+                const t = a + k * h;
+                let weight = (k === 0 || k === nSteps) ? 1 : (k % 2 === 1 ? 4 : 2);
+                s += weight / Math.log(t);
+            }
+
+            return (h / 3.0) * s;
+        }
+
+        // 2. Error Kernel
+        function newPntErrorKernel(x, c) {
+            if (x <= 1.0) return 0.0;
+            const L = Math.log(x);
+            return x * Math.exp(-c * Math.sqrt(L));
+        }
+
+        // 3. Main Calculation Function
+        function runKernelCalculation() {
+            const inputVal = document.getElementById('calcInput').value;
+            const x = parseFloat(inputVal);
+            const resultBox = document.getElementById('calcResult');
+
+            if (isNaN(x) || x < 2) {
+                resultBox.innerHTML = "エラー: x は 2 以上の数値を入力してください。";
+                return;
+            }
+
+            // Parameters for Pragmatic Mode (Demo)
+            const demoK_pi = 1.0;
+            const demoC = 0.2;
+
+            const t0 = performance.now();
+            
+            // Calculate Li(x)
+            const liVal = liNumeric(x);
+            
+            // Calculate Error Term
+            const errorTerm = demoK_pi * newPntErrorKernel(x, demoC);
+            
+            // Estimate pi(x)
+            const piEstimate = Math.round(liVal);
+
+            const t1 = performance.now();
+            const timeTaken = (t1 - t0).toFixed(2);
+
+            // Bounds
+            const lowerBound = liVal - errorTerm;
+            const upperBound = liVal + errorTerm;
+
+            // Safe Profile Check
+            const logX = Math.log(x);
+            const isSafe = logX >= 2000.0; // Platt-Trudgian condition
+
+            let output = `[Pragmatic Mode Result]\n`;
+            output += `Target x      : ${x.toLocaleString()}\n`;
+            output += `Li(x) approx  : ${liVal.toLocaleString(undefined, {maximumFractionDigits: 4})}\n`;
+            output += `Error Term    : ± ${errorTerm.toLocaleString(undefined, {maximumFractionDigits: 4})}\n`;
+            output += `------------------------------------------\n`;
+            output += `π(x) Estimate : ${piEstimate.toLocaleString()}\n`;
+            output += `Confidence Int: [${Math.floor(lowerBound).toLocaleString()}, ${Math.ceil(upperBound).toLocaleString()}]\n`;
+            output += `Calc Time     : ${timeTaken} ms\n\n`;
+            
+            output += `[System Status]\n`;
+            if (isSafe) {
+                output += `Safe Mode     : ACTIVE (log x = ${logX.toFixed(2)} >= 2000)\n`;
+                output += `Certificate   : AVAILABLE (Simulated)\n`;
+            } else {
+                output += `Safe Mode     : INACTIVE (log x = ${logX.toFixed(2)} < 2000)\n`;
+                output += `Note          : Using heuristic parameters (c=${demoC}). Not formally provable in this range.`;
+            }
+
+            resultBox.innerHTML = output;
+        }
+    </script>
+</body>
+</html>
