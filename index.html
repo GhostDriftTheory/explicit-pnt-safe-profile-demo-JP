@@ -2,8 +2,19 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="素数計算OSのための数理基盤：解析的明示公式と証明可能計算の実装モデル">
+    <meta name="theme-color" content="#004085"> <!-- モバイルブラウザのテーマカラー -->
+    <meta property="og:title" content="素数計算OSのための数理基盤">
+    <meta property="og:description" content="解析的明示公式と証明可能計算の実装モデル">
+    <meta property="og:type" content="article">
     <title>素数計算OSのための数理基盤</title>
+
+    <!-- Fonts: Noto Serif JP (本文), Noto Sans JP (見出し), Fira Code (コード) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@400;600&display=swap" rel="stylesheet">
+
     <!-- MathJax Configuration -->
     <script>
         window.MathJax = {
@@ -29,46 +40,59 @@
         };
     </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
     <style>
         :root {
-            --font-main: "Noto Serif JP", "Times New Roman", "Hiragino Mincho ProN", serif;
+            /* Design Tokens */
+            --font-serif: "Noto Serif JP", "Times New Roman", "Hiragino Mincho ProN", serif;
+            --font-sans: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --font-code: "Fira Code", "Consolas", monospace;
+
             --color-bg: #ffffff;
-            --color-text: #222222;
-            --spacing-section: 3rem;
-            --color-accent: #0056b3;
+            --color-text: #2c2c2c;
+            --color-accent: #004085; /* Academic Blue */
+            --color-border: #e0e0e0;
+            --color-bg-light: #f8f9fa;
+            --color-theorem-bg: #fdfdfe;
+            --color-theorem-border: #004085;
+
+            --spacing-section: 4rem;
         }
 
         body {
-            font-family: var(--font-main);
-            line-height: 1.8;
+            font-family: var(--font-serif);
+            line-height: 1.9;
             color: var(--color-text);
-            max-width: 840px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 3rem 1.5rem;
             background-color: var(--color-bg);
             text-align: justify;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4 {
+            font-family: var(--font-sans);
+            color: #111;
+            line-height: 1.4;
         }
 
         h1 {
             font-weight: 700;
             text-align: center;
-            /* PC等の大きな画面での基本サイズ */
-            font-size: 2rem; 
+            font-size: 2rem;
             margin-bottom: 0.5rem;
-            border: none;
-            line-height: 1.3;
-            /* 日本語の文字詰め設定 */
+            letter-spacing: 0.05em;
             font-feature-settings: "palt";
-            letter-spacing: 0.02em;
         }
 
         h1 small {
             display: block;
             font-size: 1.1rem;
-            font-weight: normal;
-            margin-top: 0.8rem;
+            font-weight: 500;
+            margin-top: 1rem;
             color: #555;
             font-feature-settings: "palt";
         }
@@ -77,17 +101,19 @@
             font-weight: 700;
             margin-top: var(--spacing-section);
             margin-bottom: 1.5rem;
-            border-bottom: 1px solid #aaa;
-            padding-bottom: 0.3rem;
-            font-size: 1.4rem;
+            border-bottom: 2px solid #333;
+            padding-bottom: 0.5rem;
+            font-size: 1.5rem;
         }
 
         .author {
             text-align: center;
+            margin-top: 1.5rem;
             margin-bottom: 4rem;
-            font-style: normal;
             font-size: 1rem;
             color: #444;
+            font-family: var(--font-sans);
+            font-weight: 500;
         }
 
         p {
@@ -95,55 +121,84 @@
             text-indent: 1em;
         }
 
+        /* Theorem Environments */
         .theorem, .lemma, .definition, .corollary, .remark {
-            margin: 2rem 0;
-            padding: 0;
+            margin: 2.5rem 0;
+            padding: 1.2rem 1.5rem;
+            background-color: var(--color-theorem-bg);
+            border-left: 4px solid var(--color-theorem-border);
+            border-radius: 0 4px 4px 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
         }
 
+        .definition { border-left-color: #28a745; --color-theorem-bg: #fafffa; }
+        .remark { border-left-color: #6c757d; --color-theorem-bg: #f8f9fa; }
+        .theorem, .lemma, .corollary { border-left-color: var(--color-accent); }
+
         .theorem-title {
-            font-weight: bold;
-            font-family: "Noto Sans JP", sans-serif;
+            font-weight: 700;
+            font-family: var(--font-sans);
             display: block;
             margin-bottom: 0.5rem;
+            color: #222;
         }
 
         .theorem-content {
-            margin-left: 0;
             font-style: normal;
         }
 
+        /* MathJax Adjustments */
         .mjx-chtml {
             font-size: 105% !important;
         }
-        
+
         mjx-container[display="true"] {
             overflow-x: auto;
             overflow-y: hidden;
             max-width: 100%;
-            padding: 0.5rem 0;
+            padding: 0.8rem 0;
+            margin: 0.5rem 0;
+            scrollbar-width: thin;
+            scrollbar-color: #ccc transparent;
         }
 
+        mjx-container[display="true"]::-webkit-scrollbar {
+            height: 4px;
+        }
+        mjx-container[display="true"]::-webkit-scrollbar-thumb {
+            background-color: #ccc;
+            border-radius: 2px;
+        }
+
+        /* Interactive Elements */
         details {
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 0.5rem 0.5rem 0;
-            background-color: #f9f9f9;
-            margin: 2rem 0;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            padding: 0;
+            background-color: #fff;
+            margin: 2.5rem 0;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
         summary {
-            font-weight: bold;
-            margin: -0.5rem -0.5rem 0;
-            padding: 0.8rem;
+            font-weight: 700;
+            margin: 0;
+            padding: 1rem 1.2rem;
             cursor: pointer;
             list-style: none;
-            background-color: #f0f0f0;
+            background-color: var(--color-bg-light);
             color: var(--color-accent);
-            border-bottom: 1px solid #ddd;
-            font-family: "Noto Sans JP", sans-serif;
+            border-bottom: 1px solid transparent;
+            font-family: var(--font-sans);
             display: flex;
             align-items: center;
             font-size: 0.95rem;
+            transition: background-color 0.2s;
+        }
+
+        summary:hover {
+            background-color: #eaecef;
         }
 
         summary::after {
@@ -151,70 +206,155 @@
             margin-left: auto;
             font-weight: bold;
             font-size: 1.2rem;
+            color: #666;
+        }
+
+        details[open] summary {
+            border-bottom: 1px solid var(--color-border);
         }
 
         details[open] summary::after {
             content: "-";
         }
-        
-        details[open] summary {
-             border-bottom: 1px solid #ddd;
-        }
 
         pre {
-            background: #f8f8f8;
-            padding: 1.2rem;
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1.5rem;
             border: none;
             overflow-x: auto;
             font-family: var(--font-code);
             font-size: 0.85rem;
-            line-height: 1.5;
+            line-height: 1.6;
             margin: 0;
         }
 
         code {
             font-family: var(--font-code);
-            color: #d63384;
-            background-color: rgba(240, 240, 240, 0.5);
-            padding: 0.1em 0.3em;
+        }
+
+        p code {
+            color: #c7254e;
+            background-color: #f9f2f4;
+            padding: 0.1rem 0.3rem;
             border-radius: 3px;
         }
 
-        .hljs-comment {
-            color: #008000;
+        pre code {
+            color: inherit;
+            background-color: transparent;
+            padding: 0;
         }
 
         ol, ul {
             margin-left: 1.5em;
             margin-bottom: 1.5rem;
+            padding-left: 1em;
         }
 
         .qed {
             text-align: right;
             margin-top: -1em;
+            margin-bottom: 3rem;
+            font-family: var(--font-sans);
         }
         .qed::after {
-            content: "◼";
-            color: #555;
+            content: "∎";
+            color: #333;
+            font-size: 1.2em;
         }
 
-        /* モバイル最適化（強化版） */
+        /* Demo App Section */
+        .app-container {
+            margin-top: 4rem;
+            padding: 2rem;
+            background: #fff;
+            border: 1px solid var(--color-accent);
+            border-top: 4px solid var(--color-accent);
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .app-title {
+            font-family: var(--font-sans);
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--color-accent);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+        input[type="number"] {
+            padding: 0.8rem;
+            font-family: var(--font-code);
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+            flex: 1;
+            min-width: 200px;
+            transition: border-color 0.2s;
+            -webkit-appearance: none; /* iOSでのスタイルリセット */
+            appearance: none;
+        }
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px rgba(0,64,133,0.1);
+        }
+        button {
+            background-color: var(--color-accent);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            font-family: var(--font-sans);
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            -webkit-tap-highlight-color: transparent; /* モバイルタップ時のハイライト削除 */
+        }
+        button:hover {
+            background-color: #003065;
+        }
+        button:active {
+            transform: translateY(1px);
+        }
+        .result-box {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 4px;
+            font-family: var(--font-code);
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            overflow-x: auto; /* 長い行がある場合のスクロール */
+            border-left: 4px solid #6c757d;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* Mobile Optimization */
         @media (max-width: 600px) {
             body {
-                padding: 2rem 1rem;
+                padding: 1.5rem 1rem;
+                font-size: 0.95rem;
             }
             h1 {
-                /* 画面幅に合わせてフォントサイズを自動調整し、改行を防ぐ */
-                /* 最小 1.1rem, 推奨 5.5vw, 最大 1.8rem */
-                font-size: clamp(1.1rem, 5.5vw, 1.8rem);
-                letter-spacing: -0.02em; /* 少し詰める */
-                margin-bottom: 0.2rem;
+                /* 画面幅に応じてフォントサイズを滑らかに調整し、不自然な改行を防ぐ */
+                font-size: clamp(1.2rem, 5vw, 1.8rem);
+                letter-spacing: 0.02em;
             }
             h1 small {
-                /* 副題も同様に調整 */
-                font-size: clamp(0.75rem, 3.5vw, 1rem);
+                font-size: clamp(0.8rem, 3.5vw, 1rem);
                 margin-top: 0.5rem;
-                line-height: 1.4;
             }
             h2 {
                 font-size: 1.25rem;
@@ -222,16 +362,66 @@
             }
             .theorem, .lemma, .definition, .corollary, .remark {
                 margin: 1.5rem 0;
-            }
-            /* スマホでの数式サイズ調整 */
-            .mjx-chtml {
-                font-size: 95% !important;
-            }
-            /* コードブロックのフォントサイズ微調整 */
-            pre {
-                font-size: 0.75rem;
                 padding: 1rem;
             }
+            .mjx-chtml {
+                font-size: 100% !important;
+            }
+            .app-container {
+                padding: 1.2rem;
+                margin-top: 3rem;
+            }
+
+            /* スマホでフォームを縦積みに */
+            .input-group {
+                flex-direction: column;
+                gap: 0.8rem;
+            }
+            input[type="number"] {
+                width: 100%;
+                box-sizing: border-box;
+            }
+            button {
+                width: 100%;
+                padding: 0.9rem;
+            }
+            pre {
+                font-size: 0.8rem;
+                padding: 1rem;
+            }
+        }
+
+        /* Navigation Footer */
+        .nav-footer {
+            text-align: center;
+            margin-top: 5rem;
+            padding-top: 2rem;
+            border-top: 1px solid #eee;
+            margin-bottom: 2rem;
+        }
+        .btn-home {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: #666;
+            font-family: var(--font-sans);
+            font-weight: 500;
+            padding: 0.8rem 2rem;
+            border: 1px solid #ddd;
+            border-radius: 50px;
+            transition: all 0.2s ease;
+            background-color: #fff;
+            font-size: 0.95rem;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-home:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+            background-color: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
 
     </style>
@@ -239,7 +429,7 @@
 <body>
 
     <h1>素数計算OSのための数理基盤<br><small>解析的明示公式と証明可能計算の実装</small></h1>
-    <div class="author">文責：マニー</div>
+    <div class="author">GhostDrift Mathematical Institute<br><span style="font-size: 0.9em; font-weight: normal; color: #666;">(Authored by Manny)</span></div>
 
     <p>
         本稿では、Riemann ゼータ関数 $\zeta(s)$ の解析的性質に基づき、素数計数関数 $\pi(x)$ の明示的な評価式を導出する過程を概観する。
@@ -254,12 +444,15 @@
 
     <div class="definition">
         <span class="theorem-title">定義 1.1 (Riemann ゼータ関数).</span>
+        <div class="theorem-content">
         複素変数 $s = \sigma + it$ ($\sigma > 1$) に対して、以下のように定義する。
         $$ \zeta(s) := \sum_{n=1}^\infty \frac{1}{n^s} = \prod_{p} \left(1 - \frac{1}{p^s}\right)^{-1}. $$
+        </div>
     </div>
 
     <div class="definition">
         <span class="theorem-title">定義 1.2 (Von Mangoldt 関数).</span>
+        <div class="theorem-content">
         $$
         \Lambda(n) := \begin{cases}
             \log p & n = p^k \text{ ($p$: 素数, $k \ge 1$) のとき}, \\
@@ -268,11 +461,14 @@
         $$
         この関数を用いると、$\zeta(s)$ の対数微分は以下のように表される。
         $$ -\frac{\zeta'}{\zeta}(s) = \sum_{n=1}^\infty \frac{\Lambda(n)}{n^s}, \quad \sigma > 1. $$
+        </div>
     </div>
 
     <div class="definition">
         <span class="theorem-title">定義 1.3 (Chebyshev 関数).</span>
+        <div class="theorem-content">
         $$ \psi(x) := \sum_{n \le x} \Lambda(n). $$
+        </div>
     </div>
 
     <h2>2. Perron の公式と複素積分</h2>
@@ -283,10 +479,12 @@
 
     <div class="lemma">
         <span class="theorem-title">補題 2.1 (打ち切り型 Perron 公式).</span>
+        <div class="theorem-content">
         $x \ge 2, T \ge 2$ とし、$c = 1 + \frac{1}{\log x}$ とおく。このとき、
         $$ \psi(x) = \frac{1}{2\pi i} \int_{c-iT}^{c+iT} \left( -\frac{\zeta'}{\zeta}(s) \right) \frac{x^s}{s} \, ds + R(x, T), $$
         が成り立つ。ここで剰余項 $R(x, T)$ は次のように評価される。
         $$ R(x, T) \ll \frac{x \log^2 x}{T}. $$
+        </div>
     </div>
 
     <p>
@@ -301,10 +499,12 @@
 
     <div class="theorem">
         <span class="theorem-title">定理 3.1 ($\psi(x)$ の明示公式).</span>
+        <div class="theorem-content">
         $x \ge 2$ および $T \ge 2$ に対して、次式が成り立つ。
         $$ \psi(x) = x - \sum_{|\gamma| \le T} \frac{x^\rho}{\rho} - \frac{\zeta'}{\zeta}(0) - \frac{1}{2}\log(1-x^{-2}) + R_{explicit}(x, T), $$
         ここで誤差項は以下を満たす。
         $$ R_{explicit}(x, T) \ll \frac{x \log^2(xT)}{T} + \log x. $$
+        </div>
     </div>
 
     <h2>4. 零点自由領域と誤差評価</h2>
@@ -324,29 +524,33 @@
 
     <div class="lemma">
         <span class="theorem-title">古典的知見 4.1 (零点自由領域; 外部定理).</span>
+        <div class="theorem-content">
         ある明示的な定数 $c_0 > 0$ が存在し、領域
         $$ \sigma \ge 1 - \frac{c_0}{\log(|t| + 2)} \qquad (|t| \ge 2) $$
         において $\zeta(\sigma + it) \neq 0$ が成り立つ。
         <br>
         歴史的には de la Vallée Poussin に遡るこの領域は、現代においては Kadiri や Mossinghoff らによる研究で、$c_0$ の具体的な数値計算値が与えられている。
+        </div>
     </div>
 
     <div class="lemma">
         <span class="theorem-title">古典的知見 4.2 (零点個数公式; 外部定理).</span>
+        <div class="theorem-content">
         $N(T)$ を $0 < \gamma \le T$ なる $\zeta(s)$ の零点 $\rho = \beta + i\gamma$ の個数とする。古典的な Riemann–von Mangoldt 公式によれば、
         $$ N(T) = \frac{T}{2\pi} \log \frac{T}{2\pi} - \frac{T}{2\pi} + O(\log T). $$
         文献（Titchmarsh, Davenport 等）には、暗黙の定数を含む形での有効な (effective) 評価式が標準的に記載されている。
         本デモではこの公式の「形式 (shape)」のみを用い、暗黙の定数は外部からの解析的入力の一部として扱う。
     </div>
+    </div>
 
     <p>
-        上記知見 4.1 および 4.2 を用い、パラメータ $T$ を $x$ に依存して最適化する。具体的には
-        $$ T = \exp(\sqrt{\log x}) $$
-        と選ぶことにより、以下の定理が得られる。
+        古典的な議論（例えば Titchmarsh や Davenport の教科書に見られるもの）により、
+        零点自由領域 4.1 と零点個数公式 4.2 から、次のような誤差項付き素数定理が得られることが知られている。
     </p>
 
     <div class="theorem">
         <span class="theorem-title">定理 4.3 (誤差項付き素数定理).</span>
+        <div class="theorem-content">
         ある明示的な定数 $c > 0$ および $x_0 \ge 2$ が存在し、
         すべての $x \ge x_0$ に対して
         $$ \psi(x) = x + O\left( x \exp(-c\sqrt{\log x}) \right) $$
@@ -357,6 +561,7 @@
         具体的な $c$ と $x_0$ を与えることができる。
         本デモでは、それらの数値の導出過程をブラックボックス化し、
         後続のアルゴリズム層では $(K_\psi, K_\pi, c, x_0)$ という「解析的プロファイル」として受け取る。
+        </div>
     </div>
 
     <h2>5. $\psi(x)$ から $\pi(x)$ への帰着</h2>
@@ -373,13 +578,23 @@
         $$ \Li(x) := \int_{2}^{x} \frac{dt}{\log t} $$
         と定義する。
     </p>
+
+    <p>
+        なお解析数論の文献では、主値積分
+        $$ \operatorname{li}(x) := \mathrm{pv}\!\!\int_0^x \frac{dt}{\log t} $$
+        を用いる記法も一般的だが、本稿では一貫して
+        $$ \Li(x) = \int_2^x \frac{dt}{\log t} $$
+        の意味で $\Li$ を用いる。
+    </p>
     
     <div class="corollary">
         <span class="theorem-title">系 5.1.</span>
+        <div class="theorem-content">
         $$ \pi(x) = \Li(x) + O\left( x \exp(-c\sqrt{\log x}) \right). $$
+        </div>
     </div>
 
-    <h2>6. アルゴリズム実装 (Python)</h2>
+    <h2>6. アルゴリズム実装とライブデモ</h2>
 
     <p>
         以上の解析的評価に基づき、素数計算OSの核となるロジックを示す。
@@ -388,6 +603,7 @@
 
     <div class="remark">
         <span class="theorem-title">注意 (Safe vs Pragmatic Modes).</span>
+        <div class="theorem-content">
         <p>
             本デモコードでは、以下の2つの利用モードを明確に区別する：
         </p>
@@ -398,7 +614,7 @@
                 $\Li(x)$ の計算には、区間演算ルーチン <code>li_bounds_interval</code> が用いられる。
                 計算機検証可能な証明書 (machine-checkable certificate) をサポートするのは本モードのみである。<br>
                 本デモにおいて、事前に組み込まれた「Safe プロファイル」 <code>PI_SAFE_PROFILE_PT2020</code> は、
-                Dusart (2010, Thm 1.12) を改良した Platt–Trudgian (2020, Cor. 2) の結果に基づくものであり、
+                Dusart (2010, Thm 1.12) を改良した Platt–Trudgian (2021, Cor. 2) の結果に基づくものであり、
                 条件 $\log x \ge 2000$ の下で
                 $$ |\pi(x) - \Li(x)| \le 235\,x (\log x)^{0.52} \exp(-0.8\sqrt{\log x}) $$
                 を保証する。
@@ -412,11 +628,24 @@
                 数式上の形式は同一であるが、そこから得られる保証はあくまでヒューリスティックなものであり、形式的な証明を意図したものではない。
             </li>
         </ul>
+        </div>
     </div>
 
-    <!-- コードブロックを折りたたみ式にして、詳細に興味がない読者の負担を減らす -->
+    <!-- Live Execution App Section -->
+    <div class="app-container">
+        <div class="app-title">⚡ Interactive OS Kernel (Pragmatic Mode)</div>
+        <p style="font-size: 0.95rem; color: #555; margin-bottom: 1.5rem;">
+            以下のフォームで、Pythonコードのロジックをブラウザ上で実行し、$\pi(x)$ の推定値と誤差項の評価を行います。
+        </p>
+        <div class="input-group">
+            <input type="number" id="calcInput" value="1000000" min="2" placeholder="x の値を入力 (例: 1000000)">
+            <button onclick="runKernelCalculation()">計算実行</button>
+        </div>
+        <div id="calcResult" class="result-box">ここに計算結果が表示されます...</div>
+    </div>
+
     <details>
-        <summary>実装コード (Python) : クリックして展開</summary>
+        <summary>Reference Implementation (Python) : クリックして展開</summary>
 <pre><code class="language-python">import math
 from typing import Tuple
 
@@ -430,7 +659,7 @@ from typing import Tuple
 #   We treat this as an external analytic input.
 # ==========================================
 PI_SAFE_PROFILE_PT2020 = {
-    "name": "Platt–Trudgian 2020, Cor. 2 (improves Dusart 2010, Thm 1.12)",
+    "name": "Platt–Trudgian 2021, Cor. 2 (improves Dusart 2010, Thm 1.12)",
     "K_pi": 235.0,
     "c": 0.8,
     # The theorem assumes log x ≥ 2000 (natural logarithm).
@@ -490,7 +719,9 @@ def li_numeric(x: float, n_steps: int = 10000) -> float:
         weight = 1 if (k == 0 or k == n_steps) else (4 if k % 2 == 1 else 2)
         s += weight / math.log(t)
 
-    return 0.5 * h * s
+    # Note: Correct Simpson's rule factor is h/3.
+    # The previous 0.5 * h was trapezoidal-like, adjusted here for consistency.
+    return (h / 3.0) * s
 
 
 # ========================================
@@ -509,7 +740,7 @@ def new_pnt_error_kernel(x: float, c: float) -> float:
 
 def new_pnt_error_kernel_pt2020(x: float, c: float) -> float:
     """
-    Platt–Trudgian (2020), Corollary 2 に対応する誤差カーネル:
+    Platt–Trudgian (2021), Corollary 2 に対応する誤差カーネル:
 
         |π(x) - Li(x)|
           ≤ 235 * x * (log x)**0.52 * exp(-0.8 * sqrt(log x))
@@ -621,5 +852,111 @@ if __name__ == "__main__":
 
     <div class="qed"></div>
 
+    <!-- Navigation Footer -->
+    <div class="nav-footer">
+        <a href="https://ghostdrifttheory.github.io/ghostdrifttheory.github.io-JP/" class="btn-home">
+            <span>←</span> GhostDrift Home へ戻る
+        </a>
+    </div>
+
+    <!-- Script to enable interactivity (Port of Python Logic) -->
+    <script>
+        // ========================================
+        // JavaScript Port of Python Logic
+        // ========================================
+
+        // 1. Li(x) numeric approximation
+        function liNumeric(x, nSteps = 10000) {
+            x = parseFloat(x);
+            if (x <= 2.0) return 0.0;
+
+            const a = 2.0;
+            const b = x;
+            const h = (b - a) / nSteps;
+            let s = 0.0;
+
+            for (let k = 0; k <= nSteps; k++) {
+                const t = a + k * h;
+                // Correct Simpson's Rule weights: 1, 4, 2, 4, ..., 2, 4, 1
+                // Note: nSteps must be even for Simpson's rule. 10000 is even.
+                let weight;
+                if (k === 0 || k === nSteps) {
+                    weight = 1;
+                } else if (k % 2 === 1) {
+                    weight = 4;
+                } else {
+                    weight = 2;
+                }
+                s += weight / Math.log(t);
+            }
+
+            return (h / 3.0) * s;
+        }
+
+        // 2. Error Kernel
+        function newPntErrorKernel(x, c) {
+            if (x <= 1.0) return 0.0;
+            const L = Math.log(x);
+            return x * Math.exp(-c * Math.sqrt(L));
+        }
+
+        // 3. Main Calculation Function
+        function runKernelCalculation() {
+            const inputVal = document.getElementById('calcInput').value;
+            const x = parseFloat(inputVal);
+            const resultBox = document.getElementById('calcResult');
+
+            if (isNaN(x) || x < 2) {
+                resultBox.innerHTML = "エラー: x は 2 以上の数値を入力してください。";
+                return;
+            }
+
+            // Parameters for Pragmatic Mode (Demo)
+            const demoK_pi = 1.0;
+            const demoC = 0.2;
+
+            const t0 = performance.now();
+
+            // Calculate Li(x)
+            const liVal = liNumeric(x);
+
+            // Calculate Error Term
+            const errorTerm = demoK_pi * newPntErrorKernel(x, demoC);
+
+            // Estimate pi(x)
+            const piEstimate = Math.round(liVal);
+
+            const t1 = performance.now();
+            const timeTaken = (t1 - t0).toFixed(2);
+
+            // Bounds
+            const lowerBound = liVal - errorTerm;
+            const upperBound = liVal + errorTerm;
+
+            // Safe Profile Check
+            const logX = Math.log(x);
+            const isSafe = logX >= 2000.0; // Platt-Trudgian condition
+
+            let output = `[Pragmatic Mode Result]\n`;
+            output += `Target x      : ${x.toLocaleString()}\n`;
+            output += `Li(x) approx  : ${liVal.toLocaleString(undefined, {maximumFractionDigits: 4})}\n`;
+            output += `Error Term    : ± ${errorTerm.toLocaleString(undefined, {maximumFractionDigits: 4})}\n`;
+            output += `------------------------------------------\n`;
+            output += `π(x) Estimate : ${piEstimate.toLocaleString()}\n`;
+            output += `Confidence Int: [${Math.floor(lowerBound).toLocaleString()}, ${Math.ceil(upperBound).toLocaleString()}]\n`;
+            output += `Calc Time     : ${timeTaken} ms\n\n`;
+
+            output += `[System Status]\n`;
+            if (isSafe) {
+                output += `Safe Mode     : ACTIVE (log x = ${logX.toFixed(2)} >= 2000)\n`;
+                output += `Certificate   : AVAILABLE (Simulated)\n`;
+            } else {
+                output += `Safe Mode     : INACTIVE (log x = ${logX.toFixed(2)} < 2000)\n`;
+                output += `Note          : Using heuristic parameters (c=${demoC}). Not formally provable in this range.`;
+            }
+
+            resultBox.innerHTML = output;
+        }
+    </script>
 </body>
 </html>
